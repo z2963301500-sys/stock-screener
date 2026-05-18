@@ -34,7 +34,7 @@ async def screen_technical(strategy: str, params: dict, top_n: int = 50,
         spot_df = spot_df[spot_df['amount'].notna() & (spot_df['amount'] > 1e6)]
         spot_df = spot_df.sort_values('amount', ascending=False)
 
-    candidates = spot_df.head(80)
+    candidates = spot_df.head(40)
     codes = candidates['code'].tolist()
     strategy_func = STRATEGY_FUNCS[strategy]
     semaphore = asyncio.Semaphore(MAX_CONCURRENT_HISTORY)
@@ -74,7 +74,7 @@ async def screen_multifactor(spot_df: pd.DataFrame, weights: dict,
         df = df[df['amount'].notna() & (df['amount'] > 1e6)]
         df = df.sort_values('amount', ascending=False)
 
-    candidates = df.head(50)
+    candidates = df.head(30)
     codes = candidates['code'].tolist()
     semaphore = asyncio.Semaphore(MAX_CONCURRENT_HISTORY)
     histories = {}
