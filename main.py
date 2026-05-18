@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse
 
 from models import TechnicalScreeningRequest, MultifactorScreeningRequest, ScreeningResponse, StockSpotPage, StockSpotItem
 from data import data_manager
-from screener import screen_technical, screen_multifactor, _safe_float
+from screener import screen_technical, screen_multifactor, _safe_float, create_task, get_task, run_technical_task, run_multifactor_task
 from strategies import STRATEGIES, calc_rsi_score, calc_ma_deviation, calc_momentum_score, calc_volume_breakout
 
 
@@ -183,16 +183,27 @@ async def page_test():
     return HTMLResponse(content='''<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Test</title></head><body><h1>JS测试</h1><button onclick="document.getElementById('r').textContent='OK '+new Date().toLocaleTimeString()">点我</button><div id="r">等待...</div><script>document.getElementById('r').textContent='JS OK '+new Date().toLocaleTimeString();</script></body></html>''')
 
 
-@app.post("/api/screen/technical", response_model=ScreeningResponse)
+@app.post("/api/screen/technical")
 async def api_screen_technical(req: TechnicalScreeningRequest):
-    return await screen_technical(strategy=req.strategy, params=req.params, top_n=req.top_n, exclude_st=req.exclude_st, min_market_cap=req.min_market_cap)
+    task_id = create_task()
+    asyncio.create_task(run_technical_task(task_id, req.strategy, req.params, req.top_n, req.exclude_st, req.min_market_cap))
+    return {"task_id": task_id, "status": "running"}
 
 
-@app.post("/api/screen/multifactor", response_model=ScreeningResponse)
+@app.post("/api/screen/multifactor")
 async def api_screen_multifactor(req: MultifactorScreeningRequest):
-    spot_df = await data_manager.get_spot_all()
+    task_id = create_task()
     weights = {'weight_momentum': req.weight_momentum, 'weight_volatility': req.weight_volatility, 'weight_volume': req.weight_volume, 'weight_reversion': req.weight_reversion}
-    return await screen_multifactor(spot_df=spot_df, weights=weights, top_n=req.top_n, exclude_st=req.exclude_st)
+    asyncio.create_task(run_multifactor_task(task_id, weights, req.top_n, req.exclude_st))
+    return {"task_id": task_id, "status": "running"}
+
+
+@app.get("/api/task/{task_id}")
+async def api_task(task_id: str):
+    task = get_task(task_id)
+    if task['status'] == 'done':
+        return task['result']
+    return task
 
 
 @app.get("/api/stocks/{code}/indicators")
