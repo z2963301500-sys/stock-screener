@@ -122,7 +122,13 @@ async def run_multifactor_task(task_id: str, weights: dict, top_n: int, exclude_
         result = await screen_multifactor(spot_df, weights, top_n, exclude_st)
         _tasks[task_id] = {'status': 'done', 'result': result}
     except Exception as e:
-        _tasks[task_id] = {'status': 'error', 'error': str(e)}
+        import traceback
+        msg = str(e)[:300]
+        tb = traceback.format_exc()
+        # Check which step failed
+        if 'decode' in msg.lower() or '<' in msg:
+            msg = '数据接口返回异常（可能地域限制），请稍后重试'
+        _tasks[task_id] = {'status': 'error', 'error': msg} if 'stock_zh' not in tb else {'status': 'error', 'error': '行情数据拉取失败，请重试'}
 
 
 def _strength_label(score: float) -> str:
