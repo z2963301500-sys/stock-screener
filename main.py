@@ -206,7 +206,7 @@ async def api_screen_multifactor(req: MultifactorScreeningRequest):
 async def api_task(task_id: str):
     task = get_task(task_id)
     if task['status'] == 'done':
-        return task['result']
+        return task['result'] | {'status': 'done'}
     return task
 
 
