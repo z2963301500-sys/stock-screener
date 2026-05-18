@@ -70,7 +70,7 @@ async def page_screener():
 <script id="strat-data" type="application/json" data-first="''' + list(STRATEGIES.keys())[0] + '''" data-mode="screener">''' + build_strat_data() + '''</script>
 <script src="/static/app.js?v=2"></script>
 ''' + F
-    return HTMLResponse(content=html, headers={"Cache-Control": "no-store"})
+    return HTMLResponse(content=html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
 
 
 @app.get("/multifactor", response_class=HTMLResponse)
@@ -96,7 +96,7 @@ async def page_multifactor():
 <script id="strat-data" type="application/json" data-first="" data-mode="multifactor">{}</script>
 <script src="/static/app.js?v=2"></script>
 ''' + F
-    return HTMLResponse(content=html, headers={"Cache-Control": "no-store"})
+    return HTMLResponse(content=html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
 
 
 @app.get("/detail/{code}", response_class=HTMLResponse)
@@ -167,16 +167,16 @@ var INDICATORS = __INDICATORS__;
     }init();
 })();
 </script>''' .replace('__CANDLES__', json.dumps(candles)).replace('__INDICATORS__', json.dumps(ind)) + F
-        return HTMLResponse(content=html, headers={"Cache-Control": "no-store"})
+        return HTMLResponse(content=html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
     except Exception as e:
         html = H + nav() + f'<div class="error-msg">加载失败: {e}</div>' + F
-        return HTMLResponse(content=html, headers={"Cache-Control": "no-store"})
+        return HTMLResponse(content=html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
 
 
 @app.get("/about", response_class=HTMLResponse)
 async def page_about():
     html = H + nav(a=True) + '''<div class="card about-card"><h2>关于选股小程序</h2><p>基于技术指标和多因子模型的 A 股智能选股工具。</p><p style="margin-top:10px"><strong>核心功能</strong></p><ul><li>技术筛选 — 6 种短线策略</li><li>多因子评分 — 四维综合排名</li><li>个股详情 — K 线图表与指标</li></ul><div class="disclaimer">免责声明：本工具仅供学习研究，不构成投资建议。股市有风险，投资需谨慎。</div></div>''' + F
-    return HTMLResponse(content=html, headers={"Cache-Control": "no-store"})
+    return HTMLResponse(content=html, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
 
 
 @app.get("/test", response_class=HTMLResponse)
