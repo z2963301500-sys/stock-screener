@@ -68,7 +68,7 @@ async def page_screener():
 <div class="modal-content card" id="modal-body"><div class="loading-overlay"><div class="spinner"></div>加载中...</div></div>
 </div>
 <script id="strat-data" type="application/json" data-first="''' + list(STRATEGIES.keys())[0] + '''" data-mode="screener">''' + build_strat_data() + '''</script>
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=2"></script>
 ''' + F
     return HTMLResponse(content=html, headers={"Cache-Control": "no-store"})
 
@@ -94,7 +94,7 @@ async def page_multifactor():
 <div class="modal-content card" id="modal-body"><div class="loading-overlay"><div class="spinner"></div>加载中...</div></div>
 </div>
 <script id="strat-data" type="application/json" data-first="" data-mode="multifactor">{}</script>
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=2"></script>
 ''' + F
     return HTMLResponse(content=html, headers={"Cache-Control": "no-store"})
 
