@@ -59,6 +59,32 @@ function showParams(key) {
     if (el) el.style.display = 'flex';
 }
 
+// ── Polling helper ──
+async function pollTask(taskId, containerId, showFn, btn) {
+    var maxRetries = 120; // ~4 mins
+    var count = 0;
+    while (count < maxRetries) {
+        try {
+            var resp = await fetch('/api/task/' + taskId);
+            var data = await resp.json();
+            if (data.status === 'done') {
+                showFn(data);
+                btn.disabled = false; btn.textContent = '开始筛选';
+                return;
+            }
+            if (data.status === 'error') {
+                document.getElementById(containerId).innerHTML = '<div class="error-msg">筛选失败<br><small>' + data.error + '</small></div>';
+                btn.disabled = false; btn.textContent = '开始筛选';
+                return;
+            }
+        } catch(e) {}
+        await new Promise(function(r) { setTimeout(r, 2000); });
+        count++;
+    }
+    document.getElementById(containerId).innerHTML = '<div class="error-msg">任务超时，请重试</div>';
+    btn.disabled = false; btn.textContent = '开始筛选';
+}
+
 // ── Screening ──
 async function doSearch() {
     var btn = document.querySelector('.btn-primary');
@@ -72,17 +98,16 @@ async function doSearch() {
             if (el) params[k] = parseFloat(el.value);
         });
     }
-    btn.disabled = true; btn.textContent = '筛选中...';
-    document.getElementById('results').innerHTML = '<div class="card"><div class="loading-overlay"><div class="spinner"></div>正在扫描市场，请稍候...</div></div>';
+    btn.disabled = true; btn.textContent = '已提交...';
+    document.getElementById('results').innerHTML = '<div class="card"><div class="loading-overlay"><div class="spinner"></div>正在扫描市场（约需30-60秒），请稍候...</div></div>';
     try {
         var body = JSON.stringify({strategy: strategy, params: params, top_n: topn, exclude_st: true});
         var resp = await fetch('/api/screen/technical', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: body});
-        if (!resp.ok) { var txt = await resp.text(); throw new Error('HTTP ' + resp.status + ': ' + txt); }
-        var data = await resp.json();
-        showResults(data);
+        if (!resp.ok) { var txt = await resp.text(); throw new Error(txt); }
+        var task = await resp.json();
+        pollTask(task.task_id, 'results', showResults, btn);
     } catch(e) {
-        document.getElementById('results').innerHTML = '<div class="error-msg">筛选失败<br><small>' + e.message + '</small></div>';
-    } finally {
+        document.getElementById('results').innerHTML = '<div class="error-msg">提交失败<br><small>' + e.message + '</small></div>';
         btn.disabled = false; btn.textContent = '开始筛选';
     }
 }
@@ -131,16 +156,15 @@ async function doMFSearch() {
     body.weight_volatility = parseFloat(document.getElementById('mf-wv').value);
     body.weight_volume = parseFloat(document.getElementById('mf-ww').value);
     body.weight_reversion = parseFloat(document.getElementById('mf-wr').value);
-    btn.disabled = true; btn.textContent = '筛选中...';
-    document.getElementById('mf-results').innerHTML = '<div class="card"><div class="loading-overlay"><div class="spinner"></div>正在多因子评分，请稍候...</div></div>';
+    btn.disabled = true; btn.textContent = '已提交...';
+    document.getElementById('mf-results').innerHTML = '<div class="card"><div class="loading-overlay"><div class="spinner"></div>正在多因子评分（约需20-40秒），请稍候...</div></div>';
     try {
         var resp = await fetch('/api/screen/multifactor', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
         if (!resp.ok) throw new Error(await resp.text());
-        var data = await resp.json();
-        showMFResults(data);
+        var task = await resp.json();
+        pollTask(task.task_id, 'mf-results', showMFResults, btn);
     } catch(e) {
-        document.getElementById('mf-results').innerHTML = '<div class="error-msg">筛选失败: ' + e.message + '</div>';
-    } finally {
+        document.getElementById('mf-results').innerHTML = '<div class="error-msg">提交失败: ' + e.message + '</div>';
         btn.disabled = false; btn.textContent = '开始筛选';
     }
 }
