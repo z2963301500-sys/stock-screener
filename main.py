@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="选股小程序", version="1.0.0", lifespan=lifespan)
+_running_tasks = {}
 
 H = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>选股小程序</title><link rel="stylesheet" href="/static/style.css"></head><body>'
 F = '</main><footer class="app-footer">数据来源 akshare · 仅供参考，不构成投资建议</footer></body></html>'
@@ -186,7 +187,9 @@ async def page_test():
 @app.post("/api/screen/technical")
 async def api_screen_technical(req: TechnicalScreeningRequest):
     task_id = create_task()
-    asyncio.create_task(run_technical_task(task_id, req.strategy, req.params, req.top_n, req.exclude_st, req.min_market_cap))
+    # Store reference to prevent GC
+    task_ref = asyncio.ensure_future(run_technical_task(task_id, req.strategy, req.params, req.top_n, req.exclude_st, req.min_market_cap))
+    _running_tasks[task_id] = task_ref
     return {"task_id": task_id, "status": "running"}
 
 
@@ -194,7 +197,8 @@ async def api_screen_technical(req: TechnicalScreeningRequest):
 async def api_screen_multifactor(req: MultifactorScreeningRequest):
     task_id = create_task()
     weights = {'weight_momentum': req.weight_momentum, 'weight_volatility': req.weight_volatility, 'weight_volume': req.weight_volume, 'weight_reversion': req.weight_reversion}
-    asyncio.create_task(run_multifactor_task(task_id, weights, req.top_n, req.exclude_st))
+    task_ref = asyncio.ensure_future(run_multifactor_task(task_id, weights, req.top_n, req.exclude_st))
+    _running_tasks[task_id] = task_ref
     return {"task_id": task_id, "status": "running"}
 
 
